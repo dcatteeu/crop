@@ -11,6 +11,9 @@
 # Makes a backup of the original image (same name but with a ~
 # attached.
 
+# TODO: Handle multiple files: crop.sh <img1> <img2> ...
+# TODO: Add option '--quiet, -q' to silence INFO messages.
+
 # Usage: crop.sh <image>
 # <image>: Filename of a bitmap (JPEG, PNG, TIFF, ...) or vector graphics image (EPS, PDF, ...).
 
@@ -24,10 +27,12 @@ if ! [ -r "${input_file}" ]; then
     exit 1
 fi
 
-filetype=$(file -I -b ${input_file} | cut -f1 -d';')
+filetype=$(file -I -b "${input_file}" | cut -f1 -d';')
+echo "INFO: filetype is" ${filetype}
 
 backup_file="${input_file}~"
-mv ${input_file} ${backup_file}
+mv "${input_file}" "${backup_file}"
+echo "INFO: created backup" ${backup_file}
 
 if [ ${filetype} == "application/postscript" ]; then
     # For EPS, use EPSTOOL. This probably doesn't work with PS, but
