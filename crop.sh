@@ -12,39 +12,58 @@
 # attached.
 
 # TODO: Handle multiple files: crop.sh <img1> <img2> ...
-# TODO: Add option '--quiet, -q' to silence INFO messages.
+# TODO: Allow specific output filename with option '-o <filename>'.
 
-# Usage: crop.sh <image>
+# Usage: crop.sh [-v] <image>
 # <image>: Filename of a bitmap (JPEG, PNG, TIFF, ...) or vector graphics image (EPS, PDF, ...).
+# -v: Activate verbose output.
 
+# Parse options.
+while getopts :v opt; do
+    case "$opt" in
+	v) verbose="on";;
+	*) echo "ERROR: unknown option" ${opt}; exit 4;;
+    esac
+done
+shift $[ $OPTIND - 1 ]
+
+# Verify input file.
 input_file="${1}"
-if ! [ -f "${input_file}" ]; then
-    echo "ERROR: image does not exist or is not a file!"
-    exit 1
-fi
-if ! [ -r "${input_file}" ]; then
-    echo "ERROR: image not readable!"
-    exit 1
-fi
+! [ -f "${input_file}" ] && echo "ERROR: image does not exist or is not a file!" && exit 1
+! [ -r "${input_file}" ] && echo "ERROR: image not readable!" && exit 2
 
+# Get filetype
 filetype=$(file -I -b "${input_file}" | cut -f1 -d';')
-echo "INFO: filetype is" ${filetype}
+[[ -n ${verbose} ]] && echo "INFO: filetype is" ${filetype}
 
+# Create backup.
 backup_file="${input_file}~"
 mv "${input_file}" "${backup_file}"
-echo "INFO: created backup" ${backup_file}
+if [ $? -eq 0 ]; then
+    [[ -n ${verbose} ]] && echo "INFO: created backup" ${backup_file}
+else
+    echo "ERROR: could not create backup file" ${backup_file}
+    exit 3
+fi
 
 if [ ${filetype} == "application/postscript" ]; then
     # For EPS, use EPSTOOL. This probably doesn't work with PS, but
     # who uses PS?
-    echo "INFO: image is EPS, using EPSTOOL"
-    epstool --copy --bbox "${backup_file}" "${input_file}"
+    if [[ -n ${verbose} ]]; then
+	echo "INFO: image is EPS, using EPSTOOL"
+    else
+	options="--quiet"
+    fi
+    epstool ${options} --copy --bbox "${backup_file}" "${input_file}"
 elif [ ${filetype} == "application/pdf" ]; then
     # For PDF, use PDFCROP.
-    echo "INFO: image is PDF, using PDFCROP"
-    pdfcrop "${backup_file}" "${input_file}"
+    if [[ -n ${verbose} ]]; then
+	echo "INFO: image is PDF, using PDFCROP"
+	options="--verbose" #By default PDFCROP is (almost) silent.
+    fi
+    pdfcrop ${options} "${backup_file}" "${input_file}"
 else
     # For bitmap images, use CONVERT.
-    echo "INFO: image is not EPS, using CONVERT"
+    [[ -n ${verbose} ]] && echo "INFO: image is not EPS or PDF, using CONVERT"
     convert "${backup_file}" -trim "${input_file}"
 fi
