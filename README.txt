@@ -3,7 +3,7 @@ types of images by relying on several file type specific crop tools
 such as EPSTOOL and ImageMagick.
 
 Makes a backup of the original image (same name but with a ~
-attached).
+attached). The backup file is overwritten if it already existed.
 
 
 
@@ -30,7 +30,9 @@ through Homebrew.
 Usage
 -----
 
-$ crop.sh <image>
+$ crop.sh [-v] <image>
 
 Where <image> is the path to a bitmap (JPEG, PNG, TIFF, ...) or vector
 graphics image (EPS, PDF, ...).
+
+The optional option -v activates verbose output.
